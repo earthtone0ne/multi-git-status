@@ -78,7 +78,7 @@ To scan deeper:
 Multi-git-status requires a POSIX compliant shell. Bash will do fine.
 
 1. Clone this git repo
-2. Copy `mgitstatus` somewhere in your PATH
+2. Copy the file `mgitstatus` into a folder somewhere in your PATH
 
 Or follow these instructions:
 
