@@ -12,6 +12,7 @@ if [ -t 1 ]; then
     C_BLUE="\033[1;34m"
     C_PURPLE="\033[1;35m"
     C_CYAN="\033[1;36m"
+    C_WHITEBOLD="\033[1;37m"
     C_RESET="$(tput sgr0)"
 fi
 
@@ -115,7 +116,6 @@ fi
 find -L "$ROOT_DIR" -maxdepth "$DEPTH" -type d | while read -r PROJ_DIR
 do
     GIT_DIR="$PROJ_DIR/.git"
-
     # If this dir is not a repo, and WARN_NOT_REPO is 1, tell the user.
     if [ \! -d "$GIT_DIR" ]; then
         if [ "$WARN_NOT_REPO" -eq 1 ] && [ "$PROJ_DIR" != "." ]; then
@@ -132,6 +132,9 @@ do
         continue
     fi
 
+    # Get current branch name
+    CURRENT_BRANCH=$(git --git-dir "$GIT_DIR"  rev-parse --abbrev-ref HEAD)
+
     # Do a 'git fetch' if requested
     if [ "$DO_FETCH" -eq 1 ]; then
         git --work-tree "$(dirname "$GIT_DIR")" --git-dir "$GIT_DIR" fetch -q >/dev/null
@@ -147,6 +150,7 @@ do
     NEEDS_PUSH_BRANCHES=""
     NEEDS_PULL_BRANCHES=""
     NEEDS_UPSTREAM_BRANCHES=""
+    ON_BRANCH=""
 
     for REF_HEAD in $(cd "$GIT_DIR/refs/heads" && find . -type 'f' | sed "s/^\.\///"); do
         # Check if this branch is tracking an upstream (local/remote branch)
@@ -168,6 +172,12 @@ do
             fi
             if [ "$CNT_BEHIND" -gt 0 ]; then
                 NEEDS_PULL_BRANCHES="${NEEDS_PULL_BRANCHES}\n$REF_HEAD"
+            fi
+
+            # Check if current branch is not master
+            ON_BRANCH=""
+            if [ "$CURRENT_BRANCH" != "master" ]; then
+                ON_BRANCH="${C_WHITEBOLD}On branch ($CURRENT_BRANCH)${C_RESET} "
             fi
 
             # Check if this branch is a branch off another branch. and if it needs
@@ -213,6 +223,9 @@ do
     # Build up the status string
     IS_OK=0  # 0 = Repo needs something, 1 = Repo needs nothing ('ok')
     STATUS_NEEDS=""
+    if [ -n "$ON_BRANCH" ]; then
+        STATUS_NEEDS="${STATUS_NEEDS}$ON_BRANCH"
+    fi
     if [ \! -z "$NEEDS_PUSH_BRANCHES" ] && [ "$NO_PUSH" -eq 0 ]; then
         STATUS_NEEDS="${STATUS_NEEDS}${C_NEEDS_PUSH}Needs push ($NEEDS_PUSH_BRANCHES)${C_RESET} "
     fi
